@@ -1,6 +1,6 @@
 ---
 title: "Data Analysis Report - your title"
-author: "Your Names"
+author: "Elizabeth Yirava, Joanna Giju, Nick"
 date: "04/05/2024"
 format:
   pdf:
