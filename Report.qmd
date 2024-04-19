@@ -1,6 +1,6 @@
 ---
 title: "Data Analysis Report - your title"
-author: "Elizabeth Yirava, Joanna Giju, Nick"
+author: "Elizabeth Yirava, Joanna Giju, Nicholas Rohrs"
 date: "04/17/2024"
 format:
   pdf:
@@ -23,6 +23,10 @@ bibliography: references.bib
 library(jtools)
 library(patchwork)
 library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(broom)
+library(here)
 ## functions
 logit <- function(x) log(x/(1 - x))
 invlogit <- function(x) exp(x)/(1 + exp(x))
@@ -48,58 +52,53 @@ In this section, introduce the problem and question(s) of interest that you aim 
 Describe the data you used in your analysis, including the source, characteristics, and any pre-processing or cleaning steps you performed. 
 
 ```{r}
-## Do not include much code in the report
-## make separate scripts if you have a lot of cleaning to do for the data
-## and for model exploration 
+# Option 1: tidytuesdayR package 
+## install.packages("tidytuesdayR")
 
-## reading data
-crabs <- read_csv(file= "data/crabs_cleaned.csv")
+tuesdata <- tidytuesdayR::tt_load('2023-12-05')
 
-## convert to factor the necesary variables
-crabs <- crabs |>
-  mutate(
-    color = factor(color, 
-                   labels = c("light medium", "medium", "dark medium", "dark")),
-    spine = factor(spine, 
-                   labels = c("both good", "one worn or broken", "both worn or broken")), 
+life_expectancy <- tuesdata$life_expectancy
+life_expectancy_different_ages <- tuesdata$life_expectancy_different_ages
+life_expectancy_female_male <- tuesdata$life_expectancy_female_male
+
+```
+
+
+
+```{r}
+working_dir <- here::here()
+
+
+le <- read_csv("life_expectancy.csv")
+colnames(le)[4] <- "LifeExpectancy"
+readr::write_csv(
+  le,
+  fs::path(working_dir, "life_expectancy.csv")
 )
 
-```
+le_different_ages <- read_csv("life_expectancy_different_ages.csv")
+colnames(le_different_ages)[4:9] <- c("LifeExpectancy0", "LifeExpectancy10", "LifeExpectancy25","LifeExpectancy45", "LifeExpectancy65", "LifeExpectancy80")
+readr::write_csv(
+  le_different_ages,
+  fs::path(working_dir, "life_expectancy_different_ages.csv")
+)
 
-
-
-```{r}
-## Produce figures
-
-crabs_prop <- crabs |>
-  group_by(color) |>
-  summarize(
-    prop_has_satellite = mean(has_satellite),
-    logit_prob_has_satellite = logit(prop_has_satellite),
-    total_crabs = length(has_satellite)
-  )
-
-plot1 <- ggplot(crabs_prop, aes(color, logit_prob_has_satellite)) +
-  geom_point() + 
-  labs(y = 'logit of proportion with satellite')
-
-plot2 <- ggplot(crabs) +
-     geom_boxplot(aes(x = width, y = has_satellite, group = has_satellite)) +
-     labs(title = "Distribution of width across groups")
- 
-# Arrange multiple plots using patchwork
-plot_combined <- plot1 + plot2
+le_female_male <- read_csv("life_expectancy_female_male.csv")
+colnames(le_female_male)[4] <- "LifeExpectancyDiffFM"
+readr::write_csv(
+  le_female_male,
+  fs::path(working_dir, "life_expectancy_female_male.csv")
 ```
 
 ```{r}
-#| label: fig-eda
-#| fig-cap: "Example figure showing two plots side by side; here in the caption you should write a brief description of what the two plots represents: ``Left side panel shows the logit of the proportion of crabs with satellites for each group of crabs with different color. The right side panel shows the distirbution of the width among crabs with and without satellites.'' "
-#| fig-width: 6
-#| fig-height: 3
-#| fig-show: hold
+# Add a new column named 'Past62' indicating whether individuals are expected to live past 62
+le$Past62 <- ifelse(le$LifeExpectancy > 62, 1, 0)
 
-# Display the combined plot
-plot_combined
+# List of countries to include
+countries_to_include <- c("United States", "China", "Japan", "Germany", "India", "United Kingdom", "France")
+
+# Filter the dataset to include only the specified countries
+le_filtered <- le %>% filter(Entity %in% countries_to_include)
 ```
 
 This is a good place where to include results of your exploratory data analysis. See @fig-eda as an example. 
@@ -128,11 +127,60 @@ where $\mbox{I}()$ in @eq-crab-model indicates a dummy variable, taking value 1 
 Present your results in this section, including figures, tables, and any other relevant outputs from your analysis. 
 
 ```{r}
-#| label: model-summary
-#| tbl-cap: "Logistic regression summary"
+# GLM for the proportion of individuals expected to live beyond 62
 
-m_color_width <- glm(has_satellite ~ color + width, family = 'binomial', data = crabs)
-summ(m_color_width, model.info = FALSE, model.fit = FALSE)
+binomial_model_country <- glm(Past62 ~ Entity, data = le_filtered, family = binomial)
+summary(binomial_model_country)
+```
+
+```{r}
+# Proportion of those expected to live beyond 62 in each country
+proportion_past_62_by_country <- le %>%
+  group_by(Entity) %>%
+  summarize(proportion_past_62 = mean(Past62))
+```
+
+```{r}
+# Proportion expected to live beyond 62 in XYZ vs proportion expected to live beyond 62 in the US divided by decades
+proportion_past_62_us <- proportion_past_62_by_country %>%
+  filter(Entity == "United States")
+
+le_decades <- le %>%
+  mutate(Decade = as.integer(Year %/% 10) * 10) %>%
+  group_by(Entity, Decade) %>%
+  summarize(proportion_past_62 = mean(Past62))
+```
+
+```{r}
+# Life expectancy changing across US decades
+le_us_decades <- le %>%
+  filter(Entity == "United States") %>%
+  mutate(Decade = as.integer(Year %/% 10) * 10) %>%
+  group_by(Decade) %>%
+  summarize(proportion_past_62 = mean(Past62))
+```
+
+```{r}
+# Gender difference in life expectancy over years
+```
+
+```{r}
+# Line chart showing female/male difference across the years included in data
+```
+
+```{r}
+# Line chart showing 6 lines (one for each year of life expectancy 0-80) across all years included in data
+le_lines <- le %>%
+  pivot_longer(cols = starts_with("LifeExpectancy"), names_to = "Age", values_to = "LifeExpectancy") %>%
+  mutate(Decade = as.integer(Year %/% 10) * 10) %>%
+  ggplot(aes(x = Year, y = LifeExpectancy, color = Age)) +
+  geom_line() +
+  labs(title = "Life Expectancy Over Time by Age", x = "Year", y = "Life Expectancy", color = "Age")
+plot(le_lines)
+```
+
+```{r}
+# Mosaic plot with proportions of those living past age 62 vs those who don’t for each year
 ```
 
 To display the model summary in a nice format you can use the `summ()` function from the `jtools` package.
