@@ -162,10 +162,22 @@ le_us_decades <- le %>%
 
 ```{r}
 # Gender difference in life expectancy over years
+
+# filter us data
+le_gender_us <- le_female_male %>% filter(Entity %in% "United States")
+
+# make linear regression model 
+limod_gender_us <- lm(LifeExpectancyDiffFM ~ Year,data = le_gender_us)
+
+summary(limod_gender_us)
+
 ```
 
 ```{r}
 # Line chart showing female/male difference across the years included in data
+plot(le_gender_us$Year,le_gender_us$LifeExpectancyDiffFM, type="l",
+     xlab = "Year", ylab = "Life Expectancy Difference between Female and Male",
+     main = "Famale Male Life Expectancy Difference over Years in US ")
 ```
 
 ```{r}
