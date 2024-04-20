@@ -1,6 +1,5 @@
----
-title: "Data Analysis Report - your title"
-author: "Elizabeth Yirava, Joanna Giju, Nicholas Rohrs, Huiyan Ni"
+title: "Data Analysis Report - Analyzing the Impact of GDP, Time, and equatorial location on Life Expectancy"
+author: "Elizabeth Yirava, Joanna Giju, Nicholas Rohrs"
 date: "04/17/2024"
 format:
   pdf:
@@ -40,54 +39,35 @@ theme_set(
 
 # Abstract
 
-Write a summary of your project (around 300 words) here. This section should provide a concise overview of your research question, data, methods, and key findings.
+In this project, the overarching question was what significant factors are playing a role in the average life expectancies of a country. To dive further, studies were done to display the influence of the Gross Domestic Product (GDP), year, and distance from equator, on the proportion of average life expectancies above 62 across various nations. To do this, we manipulated the dataset to include a binary variable representing whether a specific data point had an average life expectancy above 62. Once this was done, we first focused on analyzing the statistical trends between economic strength and the overall average life expectancy of a nation. In effort to do this, we focused on the Top 7 GDP countries to display the economically strongest players across the globe over a given period and created a binomial regression model displaying the relationship between economic strength, time, and life expectancy proportions. The study revealed a significant correlation between GDP and life expectancy displaying the higher GDP generally associated with longer life expectancies. Also, looking at the countries with significantly lower GDPs, we see the proportion of populations with expectancies above 62 are far less than countries with high GDPs which displays how important a nation’s economic position is on the population’s lifespan. Additionally, when focusing on the United States alone, a Bernoulli regression modeling displaying the country’s expectancy trends against time, (noting as health care, socio-economic factors, and overall lifestyle advancements increased), the proportion of average life expectancy above 62 also increased. Finally, contrasting countries based on distance from equator, the Bernoulli model shows countries located closer to the equator have a lower life expectancy which may be due to climate, environment, and disease. The study offers valuable insights on the impact of economic strength, lifestyle advancements, and environmental factors on life expectancies. 
 
 # Introduction
 
-In this section, introduce the problem and question(s) of interest that you aim to address in your analysis. Provide relevant background information and explain the motivation and significance of your research question. Cite manuscripts or websites you use. Here an example of how to cite a paper, @wickham2019. See  @quarto_cit for how to manage citations in Quarto.
+Across the globe, it is apparent that most of the human population is living much longer than in the past. In 1900 the average life expectancy in the US was 32 years old and in 2021, the global average life expectancy was drastically doubled to over 71 (Dattani). This increase is predominately due to advancements in health care, economic growth, education, living conditions, and poverty reduction. Due to this significant shift in behavior, we decided to analyze a data set dedicated to life expectancy data dating back for more than a century. From this data set there are some key insights we are looking to find:
+The change in the proportion of a country’s population whose average life expectancy is greater than 62 overtime when focusing on the 7 major worldwide economic players.
+The change in the proportion of average life expectancies above 62 in the United States alone over the years.
+Comparing the proportion of average life expectancies above 62 in countries near the equator vs far in effort to see the significance of climate/environmental factors on life expectancy.
 
 
 # Data and Methods
 
 Describe the data you used in your analysis, including the source, characteristics, and any pre-processing or cleaning steps you performed. 
 
+
 ```{r}
-# Option 1: tidytuesdayR package 
-## install.packages("tidytuesdayR")
-
-tuesdata <- tidytuesdayR::tt_load('2023-12-05')
-
-life_expectancy <- tuesdata$life_expectancy
-life_expectancy_different_ages <- tuesdata$life_expectancy_different_ages
-life_expectancy_female_male <- tuesdata$life_expectancy_female_male
+le <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-12-05/life_expectancy.csv')
+le_different_ages <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-12-05/life_expectancy_different_ages.csv')
 
 ```
-
-
-
 ```{r}
 working_dir <- here::here()
 
-
-le <- read_csv("life_expectancy.csv")
 colnames(le)[4] <- "LifeExpectancy"
-readr::write_csv(
-  le,
-  fs::path(working_dir, "life_expectancy.csv")
-)
 
-le_different_ages <- read_csv("life_expectancy_different_ages.csv")
+
 colnames(le_different_ages)[4:9] <- c("LifeExpectancy0", "LifeExpectancy10", "LifeExpectancy25","LifeExpectancy45", "LifeExpectancy65", "LifeExpectancy80")
-readr::write_csv(
-  le_different_ages,
-  fs::path(working_dir, "life_expectancy_different_ages.csv")
-)
 
-le_female_male <- read_csv("life_expectancy_female_male.csv")
-colnames(le_female_male)[4] <- "LifeExpectancyDiffFM"
-readr::write_csv(
-  le_female_male,
-  fs::path(working_dir, "life_expectancy_female_male.csv")
+
 ```
 
 ```{r}
@@ -101,27 +81,39 @@ countries_to_include <- c("United States", "China", "Japan", "Germany", "India",
 le_filtered <- le %>% filter(Entity %in% countries_to_include)
 ```
 
-This is a good place where to include results of your exploratory data analysis. See @fig-eda as an example. 
-Check the .qmd file for an example of how to include plots, control their size and include references in the text. 
+## INSIGHT 1- TOP 7 GDP COUNTRIES
 
+We define as outcome the presence/absence of a population whose average life expectancy is above 62 for each country and denote the observed values as $y_i$ with $i = 1, \ldots, n$ with $n = 7$. Let $y_i = 1$ indicate average life expectancy $> 62$ and $0$ otherwise.  
 
-You should also explain the methods you employed. I expect you to define the statistical model you chose for your data in mathematical form, as we did throughout the course. 
+We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox{Bernoulli}(p_i)$ independently, and model an average life expectancy above 62 for each country using the following logistic regression:
 
-Crab example: we define as outcome the presence/absence of a satellite for each crab and denote the observed values as $y_i$ with $i = 1, \ldots, n$ with $n = 173$. Let $y_i = 1$ indicate presence of a satellite and $0$ otherwise. 
-
-We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox{Bernoulli}(p_i)$ independently, and model the probability of having a satellite for each crab using the following logistic regression:
+ ---Idk about beta 8 this graph might just be for facotr variables or should we include time? 
 
 $$
 \begin{aligned}
   \mbox{logit}(p_i) = & \beta_0 + \\ 
-                    & \beta_1 \times \text{I(color == medium)}_i  \\
-                   & \beta_2 \times \text{I(color == dark medium)}_i \\
-                   & \beta_3 \times \text{I(color == dark)}_i \\
-                   & \beta_4  \times \text{I(width)}_i
+                    & \beta_1 \times \text{I(color == United States)}_i  \\
+                   & \beta_2 \times \text{I(color == China)}_i \\
+                   & \beta_3 \times \text{I(color == Germnay)}_i \\
+                   & \beta_4 \times \text{I(color == Japan)}_i \\
+                   & \beta_5 \times \text{I(color == India)}_i \\
+                   & \beta_6 \times \text{I(color == United Kingdom)}_i \\
+                   & \beta_7 \times \text{I(color == France)}_i \\
+                   & \beta_8  \times \text{I(width)}_i
 \end{aligned}
 $$ {#eq-crab-model}
 
-where $\mbox{I}()$ in @eq-crab-model indicates a dummy variable, taking value 1 when the condition is true and zero otherwise. 
+where $\mbox{I}()$ in Equation 1 indicates an indicator variable, taking value 1 when the condition is true and zero otherwise
+
+#### Figure 1: 
+
+## INSIGHT 2- United States over time Binomial THIS IS WRONG MODEL SET UP ->(N,P)
+
+We define as outcome in the United states where the average life expectancy is above 62 at $year_i$ and denote the observed values as $y_i$ with $i = 1, \ldots, n$ with $n = 100$. Let $y_i = 1$ indicate average life expectancy $> 62$ and $0$ otherwise.  
+
+We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox{Bernoulli}(p_i)$ independently, and model an average life expectancy above 62 for each year using the following logistic regression:
+
+## INSIGHT 3 - Countries close and far from equator
 
 # Results
 Present your results in this section, including figures, tables, and any other relevant outputs from your analysis. 
@@ -162,22 +154,10 @@ le_us_decades <- le %>%
 
 ```{r}
 # Gender difference in life expectancy over years
-
-# filter us data
-le_gender_us <- le_female_male %>% filter(Entity %in% "United States")
-
-# make linear regression model 
-limod_gender_us <- lm(LifeExpectancyDiffFM ~ Year,data = le_gender_us)
-
-summary(limod_gender_us)
-
 ```
 
 ```{r}
 # Line chart showing female/male difference across the years included in data
-plot(le_gender_us$Year,le_gender_us$LifeExpectancyDiffFM, type="l",
-     xlab = "Year", ylab = "Life Expectancy Difference between Female and Male",
-     main = "Famale Male Life Expectancy Difference over Years in US ")
 ```
 
 ```{r}
