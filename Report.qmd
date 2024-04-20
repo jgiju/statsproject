@@ -1,6 +1,6 @@
 ---
 title: "Data Analysis Report - your title"
-author: "Elizabeth Yirava, Joanna Giju, Nicholas Rohrs"
+author: "Elizabeth Yirava, Joanna Giju, Nicholas Rohrs, Huiyan Ni"
 date: "04/17/2024"
 format:
   pdf:
