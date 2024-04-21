@@ -116,64 +116,133 @@ We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox
 ## INSIGHT 3 - Countries close and far from equator
 
 # Results
-Present your results in this section, including figures, tables, and any other relevant outputs from your analysis. 
+
+## Insight 1- THIS ENTIRE SECTION NEEDS TO BE FIXED- YEAR AND COUNTRY OR JUST YEAR OR JUST COUNTRY?? ALSO WHICH YR AGGREGATION- 5 OR 10?
+
+```{r}
+############# I'm just copying what was done in the beetles slide deck/ HW 2.
+
+# scatterplot of past62 vs year
+# picked >= 1910 because there aren't any countries with prop >0 until 1930
+top_gdp_countries_10 <- le_filtered %>%
+  mutate(Decade = as.integer(Year %/% 10) * 10) %>%
+  subset(Decade >= 1900) %>%  
+  group_by( Decade) %>%
+  summarize(proportion_past_62 = mean(Past62))
+
+ggplot(top_gdp_countries_10, aes(x = Decade)) + 
+  geom_point(aes(y = proportion_past_62)) +
+  labs(title = "Proportion of population surviving to age 62 vs decade", x = "Decade", y= "Proportion")+
+  theme_bw()
+
+# also tried with 5 yr increments - DELETE????
+top_gdp_countries_5 <- le_filtered %>%
+  mutate(Year = as.integer(Year %/% 5) * 5) %>%
+  subset(Year >= 1900) %>%
+  group_by(Entity, Year) %>%
+  summarize(proportion_past_62 = mean(Past62))
+
+ggplot(top_gdp_countries_5, aes(x = Year)) + 
+  geom_point(aes(y = proportion_past_62)) 
+
+# did it with gdp instead of time - DELETE???????
+top_gdp_countries_GDP <- le_filtered_gdp %>%
+  group_by(Entity, GDP) %>%
+  summarize(proportion_past_62 = mean(Past62))
+
+ggplot(top_gdp_countries_GDP, aes(x = GDP)) + 
+  geom_point(aes(y = proportion_past_62)) 
+```
+The plot shows the estimated probability of surviving to age 62 versus the decade. We estimate the probability using sample proportions calculated from 10-year increments (left panel) and 5-year increments (right panel). Both plots suggest that the
+probability of surviving to age 62 increases as the decade come closer to present day. After the 2000s decade we estimate the probability to be one.
+
+For this portion of the analysis, we will aggregate by decade across the replicates. There is a large number of observations for each decade wich reduces uncertainty of the estimated probability.
+```{r}
+count(le_filtered, Entity, Decade = as.integer(Year %/% 10) * 10)
+
+count(le_filtered, Decade = as.integer(Year %/% 10) * 10) %>%
+  filter(Decade >= 1900)
+```
+
 
 ```{r}
 # GLM for the proportion of individuals expected to live beyond 62
-
-binomial_model_country <- glm(Past62 ~ Entity, data = le_filtered, family = binomial)
-summary(binomial_model_country)
-```
-
-```{r}
-# Proportion of those expected to live beyond 62 in each country
-proportion_past_62_by_country <- le %>%
-  group_by(Entity) %>%
-  summarize(proportion_past_62 = mean(Past62))
-```
-
-```{r}
-# Proportion expected to live beyond 62 in XYZ vs proportion expected to live beyond 62 in the US divided by decades
-proportion_past_62_us <- proportion_past_62_by_country %>%
-  filter(Entity == "United States")
-
-le_decades <- le %>%
+top_gdp_countries_10_entity <- le_filtered %>%
   mutate(Decade = as.integer(Year %/% 10) * 10) %>%
+  subset(Decade >= 1900) %>%  
   group_by(Entity, Decade) %>%
   summarize(proportion_past_62 = mean(Past62))
+
+binomial_model_country <- glm(formula = proportion_past_62 ~ Entity + Decade, data = top_gdp_countries_10_entity, family = binomial)
+summary(binomial_model_country)
+
+anova_country <- anova(binomial_model_country, test = "Chisq")
+anova_country
 ```
 
 ```{r}
-# Life expectancy changing across US decades
-le_us_decades <- le %>%
-  filter(Entity == "United States") %>%
-  mutate(Decade = as.integer(Year %/% 10) * 10) %>%
-  group_by(Decade) %>%
+# Interpretation of beta8 and CI
+exp(coef(binomial_model_country)[8])
+beta_8_hat <- coef(binomial_model_country)[8]
+beta_8_hat_se <- sqrt(diag(vcov(binomial_model_country))[8])
+beta_8_ci <- beta_8_hat + c(-1,1) * beta_8_hat_se *qnorm(0.05/2, lower.tail = FALSE)
+exp(beta_8_ci)
+```
+
+###########THIS IS ALL WRONG
+Model Fit:
+All parameters in the model have p-values that are significantly different from 0. The incredibly small p-values in the analysis of deviance table (a change in deviance of 158.56 on 6 degrees of freedom and 1065.98 on one degree of freedom) indicates that there is strong evidence to reject  the intercept-only model and prefer our logistic regression model with entity and year as covariates. 
+
+Model Interpretation:
+The model says that for a one unit increase in year, the log odds of surviving to 62 multiplies by $e ^ \hat{\beta_8} = 5.2539$ with a 95% confidence interval of between [2.12, 13.01].
+
+### model that uses only decade as a covariate
+```{r}
+binomial_model_yr <- glm(proportion_past_62 ~ Decade, data = top_gdp_countries_10, family = binomial)
+summary(binomial_model_yr)
+
+anova_gdp <- anova(binomial_model_yr, test = "Chisq")
+anova_gdp
+```
+Nothing significant??
+
+Trying based on 5 yr aggregation
+```{r}
+top_gdp_countries_5_entity <- le_filtered %>%
+  mutate(Year = as.integer(Year %/% 5) * 5) %>%
+  subset(Year >= 1900) %>%  
+  group_by(Entity, Year) %>%
   summarize(proportion_past_62 = mean(Past62))
+
+binomial_model_country_5 <- glm(formula = proportion_past_62 ~ Entity + Year, data = top_gdp_countries_5_entity, family = binomial)
+summary(binomial_model_country_5)
+
+anova_country <- anova(binomial_model_country_5, test = "Chisq")
+anova_country
 ```
 
+### model that uses only decade as a covariate
 ```{r}
-# Gender difference in life expectancy over years
+binomial_model_yr_5 <- glm(proportion_past_62 ~ Year, data = top_gdp_countries_5, family = binomial)
+summary(binomial_model_yr_5)
+
+anova_gdp <- anova(binomial_model_yr_5, test = "Chisq")
+anova_gdp
 ```
 
+## Comparison of models- I think we should do by 5yrs and delete 10
+############################
+
+Insight 2:
 ```{r}
-# Line chart showing female/male difference across the years included in data
+us_data <- le_filtered %>%
+   filter(Entity == "United States")
+
+us_model <- glm(Past62 ~ Entity, data = us_)
 ```
 
-```{r}
-# Line chart showing 6 lines (one for each year of life expectancy 0-80) across all years included in data
-le_lines <- le %>%
-  pivot_longer(cols = starts_with("LifeExpectancy"), names_to = "Age", values_to = "LifeExpectancy") %>%
-  mutate(Decade = as.integer(Year %/% 10) * 10) %>%
-  ggplot(aes(x = Year, y = LifeExpectancy, color = Age)) +
-  geom_line() +
-  labs(title = "Life Expectancy Over Time by Age", x = "Year", y = "Life Expectancy", color = "Age")
-plot(le_lines)
-```
+########################
 
-```{r}
-# Mosaic plot with proportions of those living past age 62 vs those who don’t for each year
-```
 
 To display the model summary in a nice format you can use the `summ()` function from the `jtools` package.
  
