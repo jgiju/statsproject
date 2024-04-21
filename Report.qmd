@@ -1,5 +1,5 @@
 title: "Data Analysis Report - Analyzing the Impact of GDP, Time, and equatorial location on Life Expectancy"
-author: "Elizabeth Yirava, Joanna Giju, Nicholas Rohrs"
+author: "Elizabeth Yirava, Joanna Giju, Nicholas Rohrs, Huiyan Ni"
 date: "04/17/2024"
 format:
   pdf:
@@ -239,6 +239,36 @@ us_data <- le_filtered %>%
    filter(Entity == "United States")
 
 us_model <- glm(Past62 ~ Entity, data = us_)
+```
+
+Insight 3:
+
+```{r}
+# insight 3
+# Firstly, select three countries on equator(Indonesia, Congo, Kenya), 
+#three countries on mid-latitude(Turkey, Argentina, Kazakhstan), 
+#and three countries on high-latitude(Norway, Finland, Canada)
+countries_equ <- c("Indonesia", "Congo", "Kenya", "Turkey", "Argentina", "Kazakhstan", "Norway", "Finland", "Canada")
+
+# Filter the dataset to include only the specified countries
+le_equ <- le %>% filter(Entity %in% countries_equ)
+
+le_equ
+
+```
+
+```{r}
+#glm for these countries
+binomial_model_equ <- glm(Past62 ~ Entity + Year, data = le_equ, family = binomial)
+summary(binomial_model_equ)
+
+#From the result, we can see all factors p-value is less than 0.05, meaning countries is significant for life expectancy. All # three equator countries: Kenya, Congo, and Indonesia showing the large negative relationship with life expectancy. 
+# Mid-latitude countries Kazakhstan and Turkey showing a relatively less negative relationship with life expectancy.
+# High-latitude countries Norway, Finland, and Canada showing positive relationship with life expectancy.
+# Overall, latitude more high, life expectancy more large. 
+
+# The result may also related with gpt of different countries, high-latitude have more developed countries than that near equator.  
+
 ```
 
 ########################
