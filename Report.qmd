@@ -122,18 +122,123 @@ We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox
 ## Insight 1- THIS ENTIRE SECTION NEEDS TO BE FIXED- YEAR AND COUNTRY OR JUST YEAR OR JUST COUNTRY?? ALSO WHICH YR AGGREGATION- 5 OR 10?
 
 ```{r}
-############# I'm just copying what was done in the beetles slide deck/ HW 2.
+# Scatterplot of past62 vs year
+# Picked >= 1910 because there aren't any countries with prop >0 until 1930
 
-# also tried with 5 yr increments - DELETE????
+top_gdp_countries_5 <- le_filtered %>%
+  mutate(Year = as.integer(Year %/% 5) * 5) %>%
+  subset(Year >= 1900) %>%
+  group_by(Year) %>%
+  summarize(proportion_past_62 = mean(Past62))
+
+ggplot(top_gdp_countries_5, aes(x = Year)) + 
+  geom_point(aes(y = proportion_past_62)) +
+  labs(title = "Proportion of population surviving to age 62 vs year", x = "Year", y= "Proportion") +
+  theme_bw()
+
+# With Color
+my_colors <- c("red", "orange", "yellow", "green", "blue", "purple", "pink")
 top_gdp_countries_5 <- le_filtered %>%
   mutate(Year = as.integer(Year %/% 5) * 5) %>%
   subset(Year >= 1900) %>%
   group_by(Entity, Year) %>%
   summarize(proportion_past_62 = mean(Past62))
 
-ggplot(top_gdp_countries_5, aes(x = Year)) + 
-  geom_point(aes(y = proportion_past_62)) +
-  labs(title = "Proportion of population surviving to age 62 vs decade", x = "Decade", y= "Proportion")+
-  theme_bw()
+ggplot(top_gdp_countries_5, aes(x = Year, y = proportion_past_62, color = Entity)) + 
+  geom_point(position = position_jitter(width = 1, height = 0), size = 1) +
+  labs(title = "Proportion of population surviving to age 62 vs year", x = "Year", y= "Proportion") +
+  theme_bw()+
+  scale_color_manual(values = my_colors)
 
 ```
+
+```{r}
+binomial_model_yr <- glm(proportion_past_62 ~ Decade, data = top_gdp_countries_10, family = binomial)
+summary(binomial_model_yr)
+anova_gdp <- anova(binomial_model_yr, test = "Chisq")
+anova_gdp
+```
+
+```{r}
+# Tried to change year to number of decades since 1900. I do not know if this is right but this did not help.
+top_gdp_countries_10 <- top_gdp_countries_10 %>% mutate(Decade_Since_1900 = (Decade - 1900) / 10)
+
+binomial_model_decade <- glm(proportion_past_62 ~ Decade_Since_1900, data = top_gdp_countries_10, family = binomial)
+
+summary(binomial_model_decade)
+
+anova_gdp <- anova(binomial_model_decade, test = "Chisq")
+anova_gdp
+```
+
+Insight 2:
+
+Had to change the target number to 40 because the life expectancy does not hit 62 until after the industrial revolution.
+
+```{r}
+# Filter the data for the years 1760-1840, but 62 is not reached in this time period.
+filtered_data <- le_filtered %>%
+  filter(Year >= 1760 & Year <= 1840)
+
+proportion_data <- filtered_data %>%
+  group_by(Year) %>%
+  summarize(proportion_past_62 = mean(Past62))
+
+model <- lm(proportion_past_62 ~ Year, data = proportion_data)
+
+predictions <- data.frame(Year = seq(min(proportion_data$Year), max(proportion_data$Year), by = 1))
+predictions$Predicted <- predict(model, newdata = predictions)
+
+ggplot(proportion_data, aes(x = Year, y = proportion_past_62)) +
+  geom_point() +
+  labs(title = "Proportion of countries hitting 62 years vs year", x = "Year", y= "Proportion") +
+  theme_bw()
+```
+
+
+```{r}
+# Filter the data for the years 1760-1840, but changed target number to 40 which is reached in this period.
+
+le_filtered$Past40 <- ifelse(le_filtered$LifeExpectancy > 40, 1, 0)
+
+filtered_data <- le_filtered %>%
+  filter(Year >= 1760 & Year <= 1840)
+
+proportion_data <- filtered_data %>%
+  group_by(Year) %>%
+  summarize(proportion_past_40 = mean(Past40))
+
+model <- lm(proportion_past_40 ~ Year, data = proportion_data)
+
+predictions <- data.frame(Year = seq(min(proportion_data$Year), max(proportion_data$Year), by = 1))
+predictions$Predicted <- predict(model, newdata = predictions)
+
+ggplot(proportion_data, aes(x = Year, y = proportion_past_40)) +
+  geom_point() +
+  labs(title = "Proportion of countries hitting 40 years vs year", x = "Year", y= "Proportion") +
+  theme_bw()
+```
+
+Since the shift from reaching the target age of 62 happens around 1945, I changed the time period to focus on.
+
+```{r}
+# Filtered the data for the years two decades before and after World War 2, which is around when 62 is reached.
+filtered_data <- le_filtered %>%
+  filter(Year >= 1920 & Year <= 1960)
+
+proportion_data <- filtered_data %>%
+  group_by(Year) %>%
+  summarize(proportion_past_62 = mean(Past62))
+
+model <- lm(proportion_past_62 ~ Year, data = proportion_data)
+
+predictions <- data.frame(Year = seq(min(proportion_data$Year), max(proportion_data$Year), by = 1))
+predictions$Predicted <- predict(model, newdata = predictions)
+
+ggplot(proportion_data, aes(x = Year, y = proportion_past_62)) +
+  geom_point() +
+  labs(title = "Proportion of countries hitting 62 years vs year", x = "Year", y= "Proportion") +
+  theme_bw()
+```
+
+
