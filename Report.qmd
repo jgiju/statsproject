@@ -177,10 +177,10 @@ Had to change the target number to 40 because the life expectancy does not hit 6
 
 ```{r}
 # Filter the data for the years 1760-1840, but 62 is not reached in this time period.
-filtered_data <- le_filtered %>%
+indust <- le %>%
   filter(Year >= 1760 & Year <= 1840)
 
-proportion_data <- filtered_data %>%
+proportion_data <- indust %>%
   group_by(Year) %>%
   summarize(proportion_past_62 = mean(Past62))
 
@@ -195,16 +195,15 @@ ggplot(proportion_data, aes(x = Year, y = proportion_past_62)) +
   theme_bw()
 ```
 
-
 ```{r}
 # Filter the data for the years 1760-1840, but changed target number to 40 which is reached in this period.
 
-le_filtered$Past40 <- ifelse(le_filtered$LifeExpectancy > 40, 1, 0)
+le$Past40 <- ifelse(le$LifeExpectancy > 40, 1, 0)
 
-filtered_data <- le_filtered %>%
+indust40 <- le %>%
   filter(Year >= 1760 & Year <= 1840)
 
-proportion_data <- filtered_data %>%
+proportion_data <- indust40 %>%
   group_by(Year) %>%
   summarize(proportion_past_40 = mean(Past40))
 
@@ -222,11 +221,11 @@ ggplot(proportion_data, aes(x = Year, y = proportion_past_40)) +
 Since the shift from reaching the target age of 62 happens around 1945, I changed the time period to focus on.
 
 ```{r}
-# Filtered the data for the years two decades before and after World War 2, which is around when 62 is reached.
-filtered_data <- le_filtered %>%
-  filter(Year >= 1920 & Year <= 1960)
+# Filtered the data for the years four decades before and after World War 2, which is around when 62 is reached.
+ww2 <- le %>%
+  filter(Year >= 1900 & Year <= 1980)
 
-proportion_data <- filtered_data %>%
+proportion_data <- ww2 %>%
   group_by(Year) %>%
   summarize(proportion_past_62 = mean(Past62))
 
@@ -239,6 +238,8 @@ ggplot(proportion_data, aes(x = Year, y = proportion_past_62)) +
   geom_point() +
   labs(title = "Proportion of countries hitting 62 years vs year", x = "Year", y= "Proportion") +
   theme_bw()
+#I think theres something weird with what data is avaiable from 1920-1950
 ```
+
 
 
