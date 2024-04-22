@@ -53,20 +53,22 @@ Comparing the proportion of average life expectancies above 62 in countries near
 
 Describe the data you used in your analysis, including the source, characteristics, and any pre-processing or cleaning steps you performed. 
 
+The “life_expectancy.csv” includes the most aggregate measures, and the variables are as follows: the country or region entity, the entity code, and the year and the life expectancy at birth for each cohort. The data includes 20,755 observations total, spanning 239 countries and 313 years.In the TidyTuesday post, additional context for the data source explains that “The data this week comes the Our World in Data Life Expectancy report, specifically the figures in the key insights section” (Rfordatascience, 2023). The Our World in Data page mentions that life expectancy changes are greatly impacted by “the large reduction in child mortality”, along with “advances in medicine, public health, and living standards” (Dattani et al., 2023). The data collection process involved household surveys, historical estimates, and existing databases from countries around the world.
+Characteristics: ?????
+We added a binary variable 'Past 62' to represent whether or not the average life expectancy for the data point was above 62 or not. For the first insight, we filtered the data to only include the past 100 years and from the article, "The top 10 Largest economies in the world", by Forbes India, we filtered the data set to only include data points belonging to the top 7 GDP countries to display the economically strongest players. For the second insight, we decided to focus on the United States alone in the past century to analyze the impact of health care, socio-economic factors, and overall lifestyle advancements, on the proportion of life expectancies above 62. Finally for the third insight, we looked at the impact of the equatorial location on a country's life expectancy. 
 
 ```{r}
 le <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-12-05/life_expectancy.csv')
 le_different_ages <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-12-05/life_expectancy_different_ages.csv')
 
 ```
+
 ```{r}
 working_dir <- here::here()
 
 colnames(le)[4] <- "LifeExpectancy"
 
-
 colnames(le_different_ages)[4:9] <- c("LifeExpectancy0", "LifeExpectancy10", "LifeExpectancy25","LifeExpectancy45", "LifeExpectancy65", "LifeExpectancy80")
-
 
 ```
 
@@ -74,7 +76,7 @@ colnames(le_different_ages)[4:9] <- c("LifeExpectancy0", "LifeExpectancy10", "Li
 # Add a new column named 'Past62' indicating whether individuals are expected to live past 62
 le$Past62 <- ifelse(le$LifeExpectancy > 62, 1, 0)
 
-# List of countries to include
+# Top 7 GDP countries to include
 countries_to_include <- c("United States", "China", "Japan", "Germany", "India", "United Kingdom", "France")
 
 # Filter the dataset to include only the specified countries
@@ -92,20 +94,19 @@ We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox
 $$
 \begin{aligned}
   \mbox{logit}(p_i) = & \beta_0 + \\ 
-                    & \beta_1 \times \text{I(color == United States)}_i  \\
-                   & \beta_2 \times \text{I(color == China)}_i \\
-                   & \beta_3 \times \text{I(color == Germnay)}_i \\
-                   & \beta_4 \times \text{I(color == Japan)}_i \\
-                   & \beta_5 \times \text{I(color == India)}_i \\
-                   & \beta_6 \times \text{I(color == United Kingdom)}_i \\
-                   & \beta_7 \times \text{I(color == France)}_i \\
-                   & \beta_8  \times \text{I(width)}_i
+                    & \beta_1 \times \text{I(Country == United States)}_i  \\
+                   & \beta_2 \times \text{I(Country == China)}_i \\
+                   & \beta_3 \times \text{I(Country == Germnay)}_i \\
+                   & \beta_4 \times \text{I(Country == Japan)}_i \\
+                   & \beta_5 \times \text{I(Country == India)}_i \\
+                   & \beta_6 \times \text{I(Country == United Kingdom)}_i \\
+                   & \beta_7 \times \text{I(Country == France)}_i \\
+                   & \beta_8  \times \text{(Year)}_i
 \end{aligned}
 $$ {#eq-crab-model}
+/////SHOULD THERE BE INDICATOR VARIABLE FOR YEAR
 
 where $\mbox{I}()$ in Equation 1 indicates an indicator variable, taking value 1 when the condition is true and zero otherwise
-
-#### Figure 1: 
 
 ## INSIGHT 2- United States over time Binomial THIS IS WRONG MODEL SET UP ->(N,P)
 
@@ -115,25 +116,13 @@ We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox
 
 ## INSIGHT 3 - Countries close and far from equator
 
+
 # Results
 
 ## Insight 1- THIS ENTIRE SECTION NEEDS TO BE FIXED- YEAR AND COUNTRY OR JUST YEAR OR JUST COUNTRY?? ALSO WHICH YR AGGREGATION- 5 OR 10?
 
 ```{r}
 ############# I'm just copying what was done in the beetles slide deck/ HW 2.
-
-# scatterplot of past62 vs year
-# picked >= 1910 because there aren't any countries with prop >0 until 1930
-top_gdp_countries_10 <- le_filtered %>%
-  mutate(Decade = as.integer(Year %/% 10) * 10) %>%
-  subset(Decade >= 1900) %>%  
-  group_by( Decade) %>%
-  summarize(proportion_past_62 = mean(Past62))
-
-ggplot(top_gdp_countries_10, aes(x = Decade)) + 
-  geom_point(aes(y = proportion_past_62)) +
-  labs(title = "Proportion of population surviving to age 62 vs decade", x = "Decade", y= "Proportion")+
-  theme_bw()
 
 # also tried with 5 yr increments - DELETE????
 top_gdp_countries_5 <- le_filtered %>%
@@ -143,165 +132,8 @@ top_gdp_countries_5 <- le_filtered %>%
   summarize(proportion_past_62 = mean(Past62))
 
 ggplot(top_gdp_countries_5, aes(x = Year)) + 
-  geom_point(aes(y = proportion_past_62)) 
-
-# did it with gdp instead of time - DELETE???????
-top_gdp_countries_GDP <- le_filtered_gdp %>%
-  group_by(Entity, GDP) %>%
-  summarize(proportion_past_62 = mean(Past62))
-
-ggplot(top_gdp_countries_GDP, aes(x = GDP)) + 
-  geom_point(aes(y = proportion_past_62)) 
-```
-The plot shows the estimated probability of surviving to age 62 versus the decade. We estimate the probability using sample proportions calculated from 10-year increments (left panel) and 5-year increments (right panel). Both plots suggest that the
-probability of surviving to age 62 increases as the decade come closer to present day. After the 2000s decade we estimate the probability to be one.
-
-For this portion of the analysis, we will aggregate by decade across the replicates. There is a large number of observations for each decade wich reduces uncertainty of the estimated probability.
-```{r}
-count(le_filtered, Entity, Decade = as.integer(Year %/% 10) * 10)
-
-count(le_filtered, Decade = as.integer(Year %/% 10) * 10) %>%
-  filter(Decade >= 1900)
-```
-
-
-```{r}
-# GLM for the proportion of individuals expected to live beyond 62
-top_gdp_countries_10_entity <- le_filtered %>%
-  mutate(Decade = as.integer(Year %/% 10) * 10) %>%
-  subset(Decade >= 1900) %>%  
-  group_by(Entity, Decade) %>%
-  summarize(proportion_past_62 = mean(Past62))
-
-binomial_model_country <- glm(formula = proportion_past_62 ~ Entity + Decade, data = top_gdp_countries_10_entity, family = binomial)
-summary(binomial_model_country)
-
-anova_country <- anova(binomial_model_country, test = "Chisq")
-anova_country
-```
-
-```{r}
-# Interpretation of beta8 and CI
-exp(coef(binomial_model_country)[8])
-beta_8_hat <- coef(binomial_model_country)[8]
-beta_8_hat_se <- sqrt(diag(vcov(binomial_model_country))[8])
-beta_8_ci <- beta_8_hat + c(-1,1) * beta_8_hat_se *qnorm(0.05/2, lower.tail = FALSE)
-exp(beta_8_ci)
-```
-
-###########THIS IS ALL WRONG
-Model Fit:
-All parameters in the model have p-values that are significantly different from 0. The incredibly small p-values in the analysis of deviance table (a change in deviance of 158.56 on 6 degrees of freedom and 1065.98 on one degree of freedom) indicates that there is strong evidence to reject  the intercept-only model and prefer our logistic regression model with entity and year as covariates. 
-
-Model Interpretation:
-The model says that for a one unit increase in year, the log odds of surviving to 62 multiplies by $e ^ \hat{\beta_8} = 5.2539$ with a 95% confidence interval of between [2.12, 13.01].
-
-### model that uses only decade as a covariate
-```{r}
-binomial_model_yr <- glm(proportion_past_62 ~ Decade, data = top_gdp_countries_10, family = binomial)
-summary(binomial_model_yr)
-
-anova_gdp <- anova(binomial_model_yr, test = "Chisq")
-anova_gdp
-```
-Nothing significant??
-
-Trying based on 5 yr aggregation
-```{r}
-top_gdp_countries_5_entity <- le_filtered %>%
-  mutate(Year = as.integer(Year %/% 5) * 5) %>%
-  subset(Year >= 1900) %>%  
-  group_by(Entity, Year) %>%
-  summarize(proportion_past_62 = mean(Past62))
-
-binomial_model_country_5 <- glm(formula = proportion_past_62 ~ Entity + Year, data = top_gdp_countries_5_entity, family = binomial)
-summary(binomial_model_country_5)
-
-anova_country <- anova(binomial_model_country_5, test = "Chisq")
-anova_country
-```
-
-### model that uses only decade as a covariate
-```{r}
-binomial_model_yr_5 <- glm(proportion_past_62 ~ Year, data = top_gdp_countries_5, family = binomial)
-summary(binomial_model_yr_5)
-
-anova_gdp <- anova(binomial_model_yr_5, test = "Chisq")
-anova_gdp
-```
-
-## Comparison of models- I think we should do by 5yrs and delete 10
-############################
-
-Insight 2:
-```{r}
-us_data <- le_filtered %>%
-   filter(Entity == "United States")
-
-us_model <- glm(Past62 ~ Entity, data = us_)
-```
-
-Insight 3:
-
-```{r}
-# insight 3
-# Firstly, select three countries on equator(Indonesia, Congo, Kenya), 
-#three countries on mid-latitude(Turkey, Argentina, Kazakhstan), 
-#and three countries on high-latitude(Norway, Finland, Canada)
-countries_equ <- c("Indonesia", "Congo", "Kenya", "Turkey", "Argentina", "Kazakhstan", "Norway", "Finland", "Canada")
-
-# Filter the dataset to include only the specified countries
-le_equ <- le %>% filter(Entity %in% countries_equ)
-
-le_equ
+  geom_point(aes(y = proportion_past_62)) +
+  labs(title = "Proportion of population surviving to age 62 vs decade", x = "Decade", y= "Proportion")+
+  theme_bw()
 
 ```
-
-```{r}
-#glm for these countries
-binomial_model_equ <- glm(Past62 ~ Entity + Year, data = le_equ, family = binomial)
-summary(binomial_model_equ)
-
-#From the result, we can see all factors p-value is less than 0.05, meaning countries is significant for life expectancy. All # three equator countries: Kenya, Congo, and Indonesia showing the large negative relationship with life expectancy. 
-# Mid-latitude countries Kazakhstan and Turkey showing a relatively less negative relationship with life expectancy.
-# High-latitude countries Norway, Finland, and Canada showing positive relationship with life expectancy.
-# Overall, latitude more high, life expectancy more large. 
-
-# The result may also related with gpt of different countries, high-latitude have more developed countries than that near equator.  
-
-```
-
-########################
-
-
-To display the model summary in a nice format you can use the `summ()` function from the `jtools` package.
- 
-Other libraries: 
-\begin{itemize}
-\item \texttt{xtable}: good if you are familiar with latex (see \href{https://cran.r-project.org/web/packages/xtable/vignettes/xtableGallery.pdf}{xtable documentation} for examples)
-\item \texttt{gtable}, implements a ``grammar of table'' idea (see \url{https://gt.rstudio.com} for documentation)
-\end{itemize}
-
-In this section, discuss and interpret your results. Explain the implications and significance of your findings, and relate them to your research question and existing literature or theories.
-
-# Conclusion
-
-Summarize your main findings and conclusions in this section. Highlight the key takeaways and contributions of your analysis, and provide recommendations or suggestions for future research or practical applications based on your results.
-
-### References
-
-::: {#refs}
-:::
-
-# Appendix (Optional)
-
-If you want to include your R code as an appendix, you can create a new code chunk and set `#| echo: true` to show the code and `#| eval: false` to avoid that to be run. You can also provide scripts separately as supplementary material.
-
-```{r}
-#| echo: true
-#| eval: false
-
-# Your code here
-```
-
-
