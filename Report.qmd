@@ -241,5 +241,58 @@ ggplot(proportion_data, aes(x = Year, y = proportion_past_62)) +
 #I think theres something weird with what data is avaiable from 1920-1950
 ```
 
+Insight 3:
+
+```{r}
+#select the countries which have the data before 1950
+le_year1949 <- le %>% filter(Year < 1949)
+
+countries_1949 <- unique(le_year1949$Entity)
+
+print(countries_1949)
+
+```
+```{r}
+# select three countries on equator(Indonesia, Uganda, Kenya), 
+# three countries on mid-latitude(Turkey,Mexico, Kazakhstan), 
+# and three countries on high-latitude(Sweden, Iceland, Finland) from previous list
+countries_equ <- c("Indonesia", "Uganda", "Kenya", "Turkey", "Mexico", "Kazakhstan", "Sweden", "Iceland", "Finland")
+
+# Filter the dataset to include only the specified countries
+le_equ <- le %>% filter(Entity %in% countries_equ) %>% filter(Year > 1924)
+
+le_equ
+
+```
+
+```{r}
+#glm for these countries
+binomial_model_equ <- glm(Past62 ~ Entity + Year, data = le_equ, family = binomial)
+summary(binomial_model_equ)
+
+#From the result, we can see all factors p-value is less than 0.05, meaning countries is significant for life expectancy. All 
+# three equator countries: Kenya, Uganda, and Indonesia showing the large negative relationship with life expectancy. 
+# Mid-latitude countries Kazakhstan,Mexico and Turkey showing a relatively less negative relationship with life expectancy.
+# High-latitude countries Iceland, and Sweden showing positive relationship with life expectancy.
+# Overall, latitude more high, life expectancy more large. 
+
+# The result may also related with gpt of different countries, high-latitude have more developed countries than that near equator.  
+
+```
+
+```{r}
+# visual displaying
+colors <- c("Indonesia" = "red", "Uganda" = "red", "Kenya" = "red", "Turkey" = "blue", "Mexico" = "blue", "Kazakhstan" = "blue", "Sweden" = "green", "Iceland" = "green", "Finland" = "green")
+orders <- names(colors)
+
+ggplot(le_equ, aes(x = Year, y = LifeExpectancy, color = Entity)) +
+  geom_line() +
+  scale_color_manual(values = colors, breaks = orders, labels = orders) + 
+  labs(x = "Year", y = "Life Expectancy", title = "Life Expectancy Over the Years in Different Countries") +
+  theme_minimal()
+
+```
+
+
 
 
