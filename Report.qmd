@@ -201,7 +201,7 @@ Now we will try a model including the factor variable with different levels for 
 ```{r}
 ## Model with both year and country 
 top_gdp_countries_5_entity <- le_filtered %>%
-  mutate(Year = as.integer(Year %/% 5) * 5, as.factor(Entity)) %>%
+  mutate(Year = as.integer(Year %/% 5) * 5, Entity = as.factor(Entity)) %>%
   subset(Year >= 1900) %>%  
   group_by(Entity, Year) %>% 
   summarize(proportion_past_62 = mean(Past62), num = n())
