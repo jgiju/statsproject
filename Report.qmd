@@ -17,8 +17,6 @@ bibliography: references.bib
 ```{r}
 #| label: setup
 
-## Good practice to include libraries and functions you will need in a chunk
-## at the beginning of your file
 library(jtools)
 library(patchwork)
 library(tidyverse)
@@ -59,17 +57,12 @@ We added a binary variable 'Past 62' to represent whether or not the average lif
 
 ```{r}
 le <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-12-05/life_expectancy.csv')
-le_different_ages <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-12-05/life_expectancy_different_ages.csv')
-
 ```
 
 ```{r}
 working_dir <- here::here()
 
 colnames(le)[4] <- "LifeExpectancy"
-
-colnames(le_different_ages)[4:9] <- c("LifeExpectancy0", "LifeExpectancy10", "LifeExpectancy25","LifeExpectancy45", "LifeExpectancy65", "LifeExpectancy80")
-
 ```
 
 ```{r}
@@ -89,42 +82,33 @@ We define as outcome the presence/absence of a population whose average life exp
 
 We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox{Bernoulli}(p_i)$ independently, and model an average life expectancy above 62 for each country using the following logistic regression:
 
- ---Idk about beta 8 this graph might just be for facotr variables or should we include time? 
-
+First, we will look at the model that uses only year as a covariate.
 $$
 \begin{aligned}
   \mbox{logit}(p_i) = & \beta_0 + \\ 
-                    & \beta_1 \times \text{I(Country == United States)}_i  \\
-                   & \beta_2 \times \text{I(Country == China)}_i \\
-                   & \beta_3 \times \text{I(Country == Germnay)}_i \\
-                   & \beta_4 \times \text{I(Country == Japan)}_i \\
-                   & \beta_5 \times \text{I(Country == India)}_i \\
-                   & \beta_6 \times \text{I(Country == United Kingdom)}_i \\
-                   & \beta_7 \times \text{I(Country == France)}_i \\
-                   & \beta_8  \times \text{(Year)}_i
+                   & \beta_1  \times \text{(Year)}_i
 \end{aligned}
-$$ {#eq-crab-model}
-/////SHOULD THERE BE INDICATOR VARIABLE FOR YEAR
+$$ 
 
-where $\mbox{I}()$ in Equation 1 indicates an indicator variable, taking value 1 when the condition is true and zero otherwise
+Then, we will add country as a factor variable and use the following logistic regression:
+$$
+\begin{aligned}
+  \mbox{logit}(p_i) = & \beta_0 + \\ 
+                   & \beta_1 \times \text{I(Country == China)}_i \\
+                   & \beta_2 \times \text{I(Country == Germnay)}_i \\
+                   & \beta_3 \times \text{I(Country == Japan)}_i \\
+                   & \beta_4 \times \text{I(Country == India)}_i \\
+                   & \beta_5 \times \text{I(Country == United Kingdom)}_i \\
+                   & \beta_6 \times \text{I(Country == France)}_i \\
+                   & \beta_7  \times \text{(Year)}_i
+\end{aligned}
+$$ 
 
-## INSIGHT 2- United States over time Binomial THIS IS WRONG MODEL SET UP ->(N,P)
-
-We define as outcome in the United states where the average life expectancy is above 62 at $year_i$ and denote the observed values as $y_i$ with $i = 1, \ldots, n$ with $n = 100$. Let $y_i = 1$ indicate average life expectancy $> 62$ and $0$ otherwise.  
-
-We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox{Bernoulli}(p_i)$ independently, and model an average life expectancy above 62 for each year using the following logistic regression:
-
-## INSIGHT 3 - Countries close and far from equator
-
-
-# Results
-
-## Insight 1- THIS ENTIRE SECTION NEEDS TO BE FIXED- YEAR AND COUNTRY OR JUST YEAR OR JUST COUNTRY?? ALSO WHICH YR AGGREGATION- 5 OR 10?
+where $\mbox{I}()$ in Equation 1 indicates an indicator variable, taking value 1 when the condition is true and zero otherwise, and the refrence level for the factor variable is the United States.
 
 ```{r}
+######## When knitting--- remove this code chunk from report
 # Scatterplot of past62 vs year
-# Picked >= 1910 because there aren't any countries with prop >0 until 1930
-
 top_gdp_countries_5 <- le_filtered %>%
   mutate(Year = as.integer(Year %/% 5) * 5) %>%
   subset(Year >= 1900) %>%
@@ -146,11 +130,42 @@ top_gdp_countries_5 <- le_filtered %>%
 
 ggplot(top_gdp_countries_5, aes(x = Year, y = proportion_past_62, color = Entity)) + 
   geom_point(position = position_jitter(width = 1, height = 0), size = 1) +
-  labs(title = "Proportion of population surviving to age 62 vs year", x = "Year", y= "Proportion") +
+  geom_line() +
+  labs(title = "Proportion of population surviving to age 62 vs year by country", x = "Year", y= "Proportion") +
   theme_bw()+
   scale_color_manual(values = my_colors)
 
 ```
+
+The first plot shows the relationship between year and the proportion of the population surviving to age 62 for all countries. We choose to start at year 1900 and aggregate by 5 year intervals due to the availability of the data and the lack of any survivors to age 62 prior to 1900. The graph demonstrates that there appears to be an increase in proportion of population surviving to age 62 as the years progress. 
+
+The second plot again shows the relationship between year and the proportion of the population surviving to age 62, but is now disaggregated by country. In this graph the increase in proportion of population surviving to age 62 as years progress is also apparent. However, the graph also shows that the countries appear to differ in the amount of years it takes before the proportion surviving to age 62 increases. 
+
+For this portion of the analysis, we will aggregate by decade across the replicates. There is a large number of observations for each decade whic reduces uncertainty of the estimated probability.
+
+```{r}
+######## When knitting--- remove this code chunk from report
+count(le_filtered, Entity, Year = as.integer(Year %/% 5) * 5) %>%
+  filter(Year >= 1900)
+
+count(le_filtered, Year = as.integer(Year %/% 5) * 5) %>%
+  filter(Year >= 1900)
+```
+
+This table shows the amount of observations in each bin for the two models. The first shows the data by country and year, and the second shows by year only.
+
+## INSIGHT 2- United States over time Binomial THIS IS WRONG MODEL SET UP ->(N,P)
+
+We define as outcome in the United states where the average life expectancy is above 62 at $year_i$ and denote the observed values as $y_i$ with $i = 1, \ldots, n$ with $n = 100$. Let $y_i = 1$ indicate average life expectancy $> 62$ and $0$ otherwise.  
+
+We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox{Bernoulli}(p_i)$ independently, and model an average life expectancy above 62 for each year using the following logistic regression:
+
+## INSIGHT 3 - Countries close and far from equator
+
+
+# Results
+
+## Insight 1
 
 ```{r}
 binomial_model_yr <- glm(proportion_past_62 ~ Decade, data = top_gdp_countries_10, family = binomial)
@@ -160,16 +175,70 @@ anova_gdp
 ```
 
 ```{r}
-# Tried to change year to number of decades since 1900. I do not know if this is right but this did not help.
-top_gdp_countries_10 <- top_gdp_countries_10 %>% mutate(Decade_Since_1900 = (Decade - 1900) / 10)
+### model that uses only 5 yr as a covariate
+top_gdp_countries_5 <- le_filtered %>%
+  mutate(Year = as.integer(Year %/% 5) * 5) %>%
+  subset(Year >= 1900) %>%
+  group_by(Year) %>%
+  summarize(proportion_past_62 = mean(Past62), num = n())
 
-binomial_model_decade <- glm(proportion_past_62 ~ Decade_Since_1900, data = top_gdp_countries_10, family = binomial)
+binomial_model_yr_5 <- glm(proportion_past_62 ~ Year, data = top_gdp_countries_5, family = binomial, weights = num)
+summary(binomial_model_yr_5)
 
-summary(binomial_model_decade)
-
-anova_gdp <- anova(binomial_model_decade, test = "Chisq")
+anova_gdp <- anova(binomial_model_yr_5, test = "Chisq")
 anova_gdp
 ```
+
+```{r}
+# Interpretation of beta1 (year) and CI for year this model
+exp(coef(binomial_model_yr_5)[2])
+beta_8_hat <- coef(binomial_model_yr_5)[2]
+beta_8_hat_se <- sqrt(diag(vcov(binomial_model_yr_5))[2])
+beta_8_ci <- beta_8_hat + c(-1,1) * beta_8_hat_se *qnorm(0.05/2, lower.tail = FALSE)
+exp(beta_8_ci)
+```
+
+Model Fit:
+For this model, the incredibly small p-value for intercept $\beta_0$ and the slope for the impact of year on the logit of the probability of surviving to age 62, $\beta_1$, are significantly different from 0. The also very small p-value in the analysis of deviance table (<2.2e-16) shows strong evidence in favor of rejecting the intercept-only model and preferring the model including year. 
+
+Model Interpretation:
+The model says that for a one unit increase in year, the log odds of surviving to 62 multiplies by $e ^ \hat{\beta_1} = 1.075$ with a 95% confidence interval of between [1.06, 1.09]. This supports the idea presented in the graphs above: as years progress, the log odds of surviving to 62 increase. 
+
+Now we will try a model including the factor variable with different levels for each of the 7 countries included with a baseline of the United States and also include year as a covariate still. 
+```{r}
+## Model with both year and country 
+top_gdp_countries_5_entity <- le_filtered %>%
+  mutate(Year = as.integer(Year %/% 5) * 5, as.factor(Entity)) %>%
+  subset(Year >= 1900) %>%  
+  group_by(Entity, Year) %>% 
+  summarize(proportion_past_62 = mean(Past62), num = n())
+
+
+binomial_model_country_5 <- glm(formula = proportion_past_62 ~ relevel(Entity, ref = "United States") + Year, data = top_gdp_countries_5_entity, family = binomial, weights = num)
+summary(binomial_model_country_5)
+
+anova_country <- anova(binomial_model_country_5, test = "Chisq")
+anova_country
+```
+
+```{r}
+exp(coef(binomial_model_country_5)[])
+```
+
+
+Model Fit:
+All parameters in the model have p-values that are significantly different from 0 (since some of the country factor level variables are significant, we include all of them). The incredibly small p-values in the analysis of deviance table (a change in deviance of 94.12 on 6 degrees of freedom for the countries and 731.85 on one degree of freedom for year) indicates that there is strong evidence to reject the intercept-only model and prefer our logistic regression model with entity and year as covariates. 
+
+Model Interpretation:
+This model shows that in a model also containing year, the log odds of surviving to 62 for each respective country multiplies by:
+China- $e ^ \hat{\beta_1} = 1.76e-14$
+France- $e ^ \hat{\beta_2} = 1.33e-3$
+Germany- $e ^ \hat{\beta_3} = 1.46e-4$
+India- $e ^ \hat{\beta_4} = 3.76e-22$
+Japan- $e ^ \hat{\beta_5} = 1.10e-5$
+United Kingdom- $e ^ \hat{\beta_6} = 1.88e-1$
+
+It is notable that India and China both have far more negative log odds compared to the other countries in this model. 
 
 Insight 2:
 
@@ -292,6 +361,12 @@ ggplot(le_equ, aes(x = Year, y = LifeExpectancy, color = Entity)) +
   theme_minimal()
 
 ```
+
+##Conclusion 
+
+###Insight 1
+
+The logistic regressions performed demonstrate a clear relationship between year and proportion of the population surviving to age 62. The proportion of the population surviving to age 62 also appears to be impacted by the country from which the population is sampled. Compared to the United States, other leading economic players have historically had less of the proportion of the population survive to age 62. This model could be improved by incorporating more covariates, such as presence of wars/famine/ other variables that would drastically impact life expectancy. Applications of the life expectancy study outlined in this report include studying health care and medicinal improvements over time or in different areas of the world. Alternatively, the models could be used to find where gaps in life expectancy exist (such as countries that comparatively have a much lower life expectancy) and attempt to remedy the discrepancy. 
 
 
 
