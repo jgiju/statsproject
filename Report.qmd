@@ -168,13 +168,6 @@ We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox
 ## Insight 1
 
 ```{r}
-binomial_model_yr <- glm(proportion_past_62 ~ Year, data = top_gdp_countries_5, family = binomial)
-summary(binomial_model_yr)
-anova_gdp <- anova(binomial_model_yr, test = "Chisq")
-anova_gdp
-```
-
-```{r}
 ### model that uses only 5 yr as a covariate
 top_gdp_countries_5 <- le_filtered %>%
   mutate(Year = as.integer(Year %/% 5) * 5) %>%
