@@ -37,14 +37,20 @@ theme_set(
 
 # Abstract
 
-In this project, the overarching question was what significant factors are playing a role in the average life expectancies of a country. To dive further, studies were done to display the influence of the Gross Domestic Product (GDP), year, and distance from equator, on the proportion of average life expectancies above 62 across various nations. To do this, we manipulated the dataset to include a binary variable representing whether a specific data point had an average life expectancy above 62. Once this was done, we first focused on analyzing the statistical trends between economic strength and the overall average life expectancy of a nation. In effort to do this, we focused on the Top 7 GDP countries to display the economically strongest players across the globe over a given period and created a binomial regression model displaying the relationship between economic strength, time, and life expectancy proportions. The study revealed a significant correlation between GDP and life expectancy displaying the higher GDP generally associated with longer life expectancies. Also, looking at the countries with significantly lower GDPs, we see the proportion of populations with expectancies above 62 are far less than countries with high GDPs which displays how important a nation’s economic position is on the population’s lifespan. Additionally, when focusing on the United States alone, a Bernoulli regression modeling displaying the country’s expectancy trends against time, (noting as health care, socio-economic factors, and overall lifestyle advancements increased), the proportion of average life expectancy above 62 also increased. Finally, contrasting countries based on distance from equator, the Bernoulli model shows countries located closer to the equator have a lower life expectancy which may be due to climate, environment, and disease. The study offers valuable insights on the impact of economic strength, lifestyle advancements, and environmental factors on life expectancies. 
+In this project, the overarching question was what significant factors are playing a role in the average life expectancies of a country. To dive further, studies were done to display the influence of the Gross Domestic Product (GDP), year, and distance from equator, on the proportion of average life expectancies above 62 across various nations. To do this, we manipulated the dataset to include a binary variable representing whether a specific data point had an average life expectancy above 62. Once this was done, we filtered the data to analyze the statistical trends between economic strength and the overall average life expectancy of a nation. To do this, we focused on the Top 7 GDP countries to display the economically strongest players across the globe over a given period using the United States as a reference level and created a binomial regression model displaying the relationship between economic strength, time, and life expectancy in relation to the economically strongest country in the world. The study revealed a significant correlation between GDP and life expectancy displaying the higher GDP generally associated with stronger and earlier trends of reaching life expectancies above 62. This analysis displays how important a nation’s economic position is on the population’s lifespan.
+
+Additionally, when focusing on the United States alone, a Bernoulli regression modeling displaying the country’s expectancy trends against time, (noting as health care, socio-economic factors, and overall lifestyle advancements increased), the proportion of average life expectancy above 62 also increased. 
+
+Finally, contrasting countries based on distance from equator, the ////Bernoulli//// model shows countries located closer to the equator have a lower life expectancy which may be due to climate, environment, and disease. The study offers valuable insights on the impact of economic strength, lifestyle advancements, and environmental factors on life expectancies. 
 
 # Introduction
 
 Across the globe, it is apparent that most of the human population is living much longer than in the past. In 1900 the average life expectancy in the US was 32 years old and in 2021, the global average life expectancy was drastically doubled to over 71 (Dattani). This increase is predominately due to advancements in health care, economic growth, education, living conditions, and poverty reduction. Due to this significant shift in behavior, we decided to analyze a data set dedicated to life expectancy data dating back for more than a century. From this data set there are some key insights we are looking to find:
 The change in the proportion of a country’s population whose average life expectancy is greater than 62 overtime when focusing on the 7 major worldwide economic players.
-The change in the proportion of average life expectancies above 62 in the United States alone over the years.
-Comparing the proportion of average life expectancies above 62 in countries near the equator vs far in effort to see the significance of climate/environmental factors on life expectancy.
+
+/////The change in the proportion of average life expectancies above 62 in the United States alone over the years./////
+
+Comparing the proportion of average life expectancies above 62 in countries based on equitorial location in effort to see the significance of climate/environmental factors on life expectancy.
 
 
 # Data and Methods
@@ -78,9 +84,9 @@ le_filtered <- le %>% filter(Entity %in% countries_to_include)
 
 ## INSIGHT 1- TOP 7 GDP COUNTRIES
 
-We define as outcome the presence/absence of a population whose average life expectancy is above 62 for each country and denote the observed values as $y_i$ with $i = 1, \ldots, n$ with $n = 7$. Let $y_i = 1$ indicate average life expectancy $> 62$ and $0$ otherwise.  
+We define $y$ as outcome the presence/absence of a population whose average life expectancy is above 62 for each country and denote the observed values as $y_i$ with $i = 1, \ldots, n$ with $n = 7$. Let $y_i = 1$ indicate average life expectancy $> 62$ and $0$ otherwise.  
 
-We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox{Bernoulli}(p_i)$ independently, and model an average life expectancy above 62 for each country using the following logistic regression:
+We assume that each $y$ is a realization of a random variables $Y \sim \mbox{Binomial}(n,p)$ independently, and model an average life expectancy above 62 for each country using the following logistic regression:
 
 First, we will look at the model that uses only year as a covariate.
 $$
@@ -90,7 +96,7 @@ $$
 \end{aligned}
 $$ 
 
-Then, we will add country as a factor variable and use the following logistic regression:
+Then, we will add country as a factor variable with the following logistic regression:
 $$
 \begin{aligned}
   \mbox{logit}(p_i) = & \beta_0 + \\ 
@@ -141,7 +147,7 @@ The first plot shows the relationship between year and the proportion of the pop
 
 The second plot again shows the relationship between year and the proportion of the population surviving to age 62, but is now disaggregated by country. In this graph the increase in proportion of population surviving to age 62 as years progress is also apparent. However, the graph also shows that the countries appear to differ in the amount of years it takes before the proportion surviving to age 62 increases. 
 
-For this portion of the analysis, we will aggregate by decade across the replicates. There is a large number of observations for each decade whic reduces uncertainty of the estimated probability.
+For this portion of the analysis, we will aggregate by decade across the replicates. There is a large number of observations for each decade which reduces uncertainty of the estimated probability.
 
 ```{r}
 ######## When knitting--- remove this code chunk from report
@@ -321,7 +327,14 @@ print(countries_1949)
 countries_equ <- c("Indonesia", "Uganda", "Kenya", "Turkey", "Mexico", "Kazakhstan", "Sweden", "Iceland", "Finland")
 
 # Filter the dataset to include only the specified countries
-le_equ <- le %>% filter(Entity %in% countries_equ) %>% filter(Year > 1924)
+le_equ <- le %>% filter(Entity %in% countries_equ) %>% filter(Year > 1924)%>% 
+  summarize(proportion_past_62 = mean(Past62), num = n())
+
+#le_equ <- le %>%
+#  mutate(Year = as.integer(Year %/% 5) * 5) %>% filter(Entity %in% countries_equ) %>% 
+#  subset(Year >= 1900) %>%  
+#  group_by(Entity, Year) %>% 
+#  summarize(proportion_past_62 = mean(Past62), num = n()) 
 
 le_equ
 
@@ -329,7 +342,9 @@ le_equ
 
 ```{r}
 #glm for these countries
-binomial_model_equ <- glm(Past62 ~ Entity + Year, data = le_equ, family = binomial)
+
+
+binomial_model_equ <- glm(Past62 ~ relevel(Entity, ref = "United States") + Year, data = le_equ, family = binomial, weights = num)
 summary(binomial_model_equ)
 
 #From the result, we can see all factors p-value is less than 0.05, meaning countries is significant for life expectancy. All 
@@ -337,7 +352,6 @@ summary(binomial_model_equ)
 # Mid-latitude countries Kazakhstan,Mexico and Turkey showing a relatively less negative relationship with life expectancy.
 # High-latitude countries Iceland, and Sweden showing positive relationship with life expectancy.
 # Overall, latitude more high, life expectancy more large. 
-
 # The result may also related with gpt of different countries, high-latitude have more developed countries than that near equator.  
 
 ```
@@ -358,9 +372,12 @@ ggplot(le_equ, aes(x = Year, y = LifeExpectancy, color = Entity)) +
 ##Conclusion 
 
 ###Insight 1
-
 The logistic regressions performed demonstrate a clear relationship between year and proportion of the population surviving to age 62. The proportion of the population surviving to age 62 also appears to be impacted by the country from which the population is sampled. Compared to the United States, other leading economic players have historically had less of the proportion of the population survive to age 62. This model could be improved by incorporating more covariates, such as presence of wars/famine/ other variables that would drastically impact life expectancy. Applications of the life expectancy study outlined in this report include studying health care and medicinal improvements over time or in different areas of the world. Alternatively, the models could be used to find where gaps in life expectancy exist (such as countries that comparatively have a much lower life expectancy) and attempt to remedy the discrepancy. 
+###Insight 2
 
+###Insight 3
+
+Discussion: In the future we may also want to focus on other interactive factors such as gender, involvement in war, and different life expectancies to reflect what was considered "healthy" during a time period. From the insights that we derived, we see a clear correlation between significant factors such as economical strength, #socio-cultural events such as revoultions#, and the equitorial location of a country on its life expectancies. Although it is important to note, we cannot determine directly that only these factors determined the likelihood of a country's life expectancy because multiple factors play a role. Access to health care, infection rates, socio-economic factors such as war, and overall lifestyle advancements.
 
 
 
