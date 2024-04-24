@@ -60,13 +60,12 @@ Comparing the proportion of average life expectancies above 62 in countries base
 
 
 # Data and Methods
+##Data Description
 
-Describe the data you used in your analysis, including the source, characteristics, and any pre-processing or cleaning steps you performed. 
+The “life_expectancy.csv” includes the most aggregate measures, and the variables are as follows: the country or region entity, the entity code, and the year and the life expectancy at birth for each cohort. The data includes 20,755 observations total, spanning 239 countries and 313 years. In the TidyTuesday post, additional context for the data source explains that “The data this week comes the Our World in Data Life Expectancy report, specifically the figures in the key insights section” (Rfordatascience, 2023). The Our World in Data page mentions that life expectancy changes are greatly impacted by “the large reduction in child mortality”, along with “advances in medicine, public health, and living standards” (Dattani et al., 2023). The data collection process involved household surveys, historical estimates, and existing databases from countries around the world.
 
-The “life_expectancy.csv” includes the most aggregate measures, and the variables are as follows: the country or region entity, the entity code, and the year and the life expectancy at birth for each cohort. The data includes 20,755 observations total, spanning 239 countries and 313 years.In the TidyTuesday post, additional context for the data source explains that “The data this week comes the Our World in Data Life Expectancy report, specifically the figures in the key insights section” (Rfordatascience, 2023). The Our World in Data page mentions that life expectancy changes are greatly impacted by “the large reduction in child mortality”, along with “advances in medicine, public health, and living standards” (Dattani et al., 2023). The data collection process involved household surveys, historical estimates, and existing databases from countries around the world.
-Characteristics: ?????
+##Data Cleaning 
 We added a binary variable 'Past 62' to represent whether or not the average life expectancy for the data point was above 62 or not. For the first insight, we filtered the data to only include the past 100 years and from the article, "The top 10 Largest economies in the world", by Forbes India, we filtered the data set to only include data points belonging to the top 7 GDP countries to display the economically strongest players. For the second insight, we decided to focus on the United States alone in the past century to analyze the impact of health care, socio-economic factors, and overall lifestyle advancements, on the proportion of life expectancies above 62. Finally for the third insight, we looked at the impact of the equatorial location on a country's life expectancy. 
-
 ```{r}
 #| echo: true
 le <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-12-05/life_expectancy.csv')
