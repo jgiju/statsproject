@@ -21,7 +21,7 @@ bibliography: references.bib
 
 ```{r}
 #| label: setup
-#| echo: true
+#| echo: false
 
 library(jtools)
 library(patchwork)
@@ -67,19 +67,19 @@ The “life_expectancy.csv” includes the most aggregate measures, and the vari
 ##Data Cleaning 
 We added a binary variable 'Past 62' to represent whether or not the average life expectancy for the data point was above 62 or not. For the first insight, we filtered the data to only include the past 100 years and from the article, "The top 10 Largest economies in the world", by Forbes India, we filtered the data set to only include data points belonging to the top 7 GDP countries to display the economically strongest players. For the second insight, we decided to focus on the United States alone in the past century to analyze the impact of health care, socio-economic factors, and overall lifestyle advancements, on the proportion of life expectancies above 62. Finally for the third insight, we looked at the impact of the equatorial location on a country's life expectancy. 
 ```{r}
-#| echo: true
+#| echo: false
 le <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-12-05/life_expectancy.csv')
 ```
 
 ```{r}
-#| echo: true
+#| echo: false
 working_dir <- here::here()
 
 colnames(le)[4] <- "LifeExpectancy"
 ```
 
 ```{r}
-#| echo: true
+#| echo: false
 # Add a new column named 'Past62' indicating whether individuals are expected to live past 62
 le$Past62 <- ifelse(le$LifeExpectancy > 62, 1, 0)
 
@@ -120,7 +120,7 @@ $$
 where $\mbox{I}()$ in Equation 1 indicates an indicator variable, taking value 1 when the condition is true and zero otherwise, and the reference level for the factor variable is the United States.
 
 ```{r}
-#| echo: true
+#| echo: false
 ######## When knitting--- remove this code chunk from report
 # Scatterplot of past62 vs year
 top_gdp_countries_5 <- le_filtered %>%
@@ -158,7 +158,7 @@ The second plot again shows the relationship between year and the proportion of 
 For this portion of the analysis, we will aggregate by decade across the replicates. There is a large number of observations for each decade which reduces uncertainty of the estimated probability.
 
 ```{r}
-#| echo: true
+#| echo: false
 ######## When knitting--- remove this code chunk from report
 count(le_filtered, Entity, Year = as.integer(Year %/% 5) * 5) %>%
   filter(Year >= 1900)
@@ -182,7 +182,7 @@ We assume that each $y_i$ is a realization of a random variables $Y_i \sim \mbox
 ## Insight 1
 
 ```{r}
-#| echo: true
+#| echo: false
 ### model that uses only 5 yr as a covariate
 top_gdp_countries_5 <- le_filtered %>%
   mutate(Year = as.integer(Year %/% 5) * 5) %>%
@@ -196,7 +196,7 @@ anova_gdp
 ```
 
 ```{r}
-#| echo: true
+#| echo: false
 # Interpretation of beta1 (year) and CI for year this model
 exp(coef(binomial_model_yr_5)[2])
 beta_8_hat <- coef(binomial_model_yr_5)[2]
@@ -209,11 +209,11 @@ Model Fit:
 For this model, the incredibly small p-value for intercept $\beta_0$ and the slope for the impact of year on the logit of the probability of surviving to age 62, $\beta_1$, are significantly different from 0. The also very small p-value in the analysis of deviance table (<2.2e-16) shows strong evidence in favor of rejecting the intercept-only model and preferring the model including year. 
 
 Model Interpretation:
-The model says that for a one unit increase in year, the log odds of surviving to 62 multiplies by 1.075 with a 95% confidence interval of between [1.06, 1.09]. This supports the idea presented in the graphs above: as years progress, the log odds of surviving to 62 increase. 
+The model says that for a one unit increase in year, the log odds of surviving to 62 multiplies by $e^{\hat\beta_1} = 1.075$ with a 95% confidence interval of between [1.06, 1.09]. This supports the idea presented in the graphs above: as years progress, the log odds of surviving to 62 increase. 
 
 Now we will try a model including the factor variable with different levels for each of the 7 countries included with a baseline of the United States and also include year as a covariate still. 
 ```{r}
-#| echo: true
+#| echo: false
 ## Model with both year and country 
 top_gdp_countries_5_entity <- le_filtered %>%
   mutate(Year = as.integer(Year %/% 5) * 5, Entity = as.factor(Entity)) %>%
@@ -227,7 +227,7 @@ anova_country
 ```
 
 ```{r}
-#| echo: true
+#| echo: false
 exp(coef(binomial_model_country_5)[])
 ```
 
@@ -237,84 +237,26 @@ All parameters in the model have p-values that are significantly different from 
 
 Model Interpretation:
 This model shows that in a model also containing year, the log odds of surviving to 62 for each respective country multiplies by:
-China- $e ^ \hat{\beta_1} = 1.76e-14$
-France- $e ^ \hat{\beta_2} = 1.33e-3$
-Germany- $e ^ \hat{\beta_3} = 1.46e-4$
-India- $e ^ \hat{\beta_4} = 3.76e-22$
-Japan- $e ^ \hat{\beta_5} = 1.10e-5$
-United Kingdom- $e ^ \hat{\beta_6} = 1.88e-1$
+China- $e^{\hat\beta_1} = 1.76e-14$
+France- $e^{\hat\beta_2} = 1.33e-3$
+Germany- $e^{\hat\beta_3} = 1.46e-4$
+India- $e^{\hat\beta_4} = 3.76e-22$
+Japan- $e^{\hat\beta_5} = 1.10e-5$
+United Kingdom- $e^{\hat\beta_6} = 1.88e-1$
 
 It is notable that India and China both have far more negative log odds compared to the other countries in this model. 
 
 Insight 2:
 
-Had to change the target number to 40 because the life expectancy does not hit 62 until after the industrial revolution.
-
 ```{r}
-#| echo: true
-# Filter the data for the years 1760-1840, but 62 is not reached in this time period.
-indust <- le %>%
-  filter(Year >= 1760 & Year <= 1840)
-proportion_data <- indust %>%
-  group_by(Year) %>%
-  summarize(proportion_past_62 = mean(Past62))
-model <- lm(proportion_past_62 ~ Year, data = proportion_data)
-predictions <- data.frame(Year = seq(min(proportion_data$Year), max(proportion_data$Year), by = 1))
-predictions$Predicted <- predict(model, newdata = predictions)
-ggplot(proportion_data, aes(x = Year, y = proportion_past_62)) +
-  geom_point() +
-  labs(title = "Proportion of countries hitting 62 years vs year", x = "Year", y= "Proportion") +
-  theme_bw()
-```
-
-```{r}
-#| echo: true
-# Filter the data for the years 1760-1840, but changed target number to 40 which is reached in this period.
-le$Past40 <- ifelse(le$LifeExpectancy > 40, 1, 0)
-indust40 <- le %>%
-  filter(Year >= 1760 & Year <= 1840)
-proportion_data <- indust40 %>%
-  group_by(Year) %>%
-  summarize(proportion_past_40 = mean(Past40))
-model <- lm(proportion_past_40 ~ Year, data = proportion_data)
-predictions <- data.frame(Year = seq(min(proportion_data$Year), max(proportion_data$Year), by = 1))
-predictions$Predicted <- predict(model, newdata = predictions)
-ggplot(proportion_data, aes(x = Year, y = proportion_past_40)) +
-  geom_point() +
-  labs(title = "Proportion of countries hitting 40 years vs year", x = "Year", y= "Proportion") +
-  theme_bw()
-```
-
-Since the shift from reaching the target age of 62 happens around 1945, I changed the time period to focus on.
-
-```{r}
-#| echo: true
-# Filtered the data for the years four decades before and after World War 2, which is around when 62 is reached.
-ww2 <- le %>%
-  filter(Year >= 1900 & Year <= 1980)
-proportion_data <- ww2 %>%
-  group_by(Year) %>%
-  summarize(proportion_past_62 = mean(Past62))
-model <- lm(proportion_past_62 ~ Year, data = proportion_data)
-predictions <- data.frame(Year = seq(min(proportion_data$Year), max(proportion_data$Year), by = 1))
-predictions$Predicted <- predict(model, newdata = predictions)
-ggplot(proportion_data, aes(x = Year, y = proportion_past_62)) +
-  geom_point() +
-  labs(title = "Proportion of countries hitting 62 years vs year", x = "Year", y= "Proportion") +
-  theme_bw()
-#I think theres something weird with what data is avaiable from 1920-1950
-```
-
-Insight 3:
-
-```{r}
-#| echo: true
+#| echo: false
 #select the countries which have the data before 1950
 le_year1949 <- le %>% filter(Year < 1949)
 countries_1949 <- unique(le_year1949$Entity)
 print(countries_1949)
 ```
 ```{r}
+#| echo: false
 # select three countries on equator(Indonesia, Uganda, Kenya), 
 # three countries on mid-latitude(Turkey,Mexico, Kazakhstan), 
 # and three countries on high-latitude(Sweden, Iceland, Finland) from previous list
@@ -354,7 +296,7 @@ Finland
 By examining these countries across various latitudinal zones, we aim to discern potential correlations between geographical location and life expectancy trends before 1950.
 
 ```{r}
-#| echo: true
+#| echo: false
 #glm for these countries
 #binomial_model_equ <- glm(Past62 ~ relevel(Entity, ref = "United States") + Year, data = le_equ, family = binomial, weights = num)
 #summary(binomial_model_equ)
@@ -366,7 +308,7 @@ High-latitude countries Iceland, and Sweden showing positive relationship with l
 Overall, latitude more high, life expectancy more large. 
 The result may also related with gpt of different countries, high-latitude have more developed countries than that near equator. 
 ```{r}
-#| echo: true
+#| echo: false
 # visual displaying
 colors <- c("Indonesia" = "red", "Uganda" = "red", "Kenya" = "red", "Turkey" = "blue", "Mexico" = "blue", "Kazakhstan" = "blue", "Sweden" = "green", "Iceland" = "green", "Finland" = "green")
 orders <- names(colors)
@@ -381,8 +323,32 @@ ggplot(le_equ, aes(x = Year, y = LifeExpectancy, color = Entity)) +
 
 ###Insight 1
 The logistic regressions performed demonstrate a clear relationship between year and proportion of the population surviving to age 62. The proportion of the population surviving to age 62 also appears to be impacted by the country from which the population is sampled. Compared to the United States, other leading economic players have historically had less of the proportion of the population survive to age 62. This model could be improved by incorporating more covariates, such as presence of wars/famine/ other variables that would drastically impact life expectancy. Applications of the life expectancy study outlined in this report include studying health care and medicinal improvements over time or in different areas of the world. Alternatively, the models could be used to find where gaps in life expectancy exist (such as countries that comparatively have a much lower life expectancy) and attempt to remedy the discrepancy. 
+
 ###Insight 2
-
-###Insight 3
-
 Discussion: In the future we may also want to focus on other interactive factors such as gender, involvement in war, and different life expectancies to reflect what was considered "healthy" during a time period. From the insights that we derived, we see a clear correlation between significant factors such as economical strength, #socio-cultural events such as revoultions#, and the equitorial location of a country on its life expectancies. Although it is important to note, we cannot determine directly that only these factors determined the likelihood of a country's life expectancy because multiple factors play a role. Access to health care, infection rates, socio-economic factors such as war, and overall lifestyle advancements.
+
+
+##References
+
+For the TidyTuesday data: 
+
+Rfordatascience. (2023, December 5). Tidytuesday/data/2023/2023-12-05/readme.md at master · rfordatascience/tidytuesday. GitHub. https://github.com/rfordatascience/tidytuesday/blob/master/data/2023/2023-12-05/readme.md 
+
+For the Our World in Data background information: 
+
+
+Dattani, S., Rodés-Guirao, L., Ritchie, H., Ortiz-Ospina, E., & Roser, M. (2023, December 28). Life expectancy. Our World in Data. https://ourworldindata.org/life-expectancy 
+
+Who collected:
+
+Zijdeman, Richard and Filipa Ribeira da Silva (2015) 
+
+Life Expectancy at Birth (Total); Riley, J.C. (2005) 
+
+Estimates of Regional and Global Life Expectancy 1800-2001 
+
+Population and Development Review 
+
+Citation: 
+
+UN WPP (2022); HMD (2023); Zijdeman et al. (2015); Riley (2005) – with minor processing by Our World in Data. “Life expectancy at birth – Various sources – period tables” [dataset]. Human Mortality Database, “Human Mortality Database”; United Nations, “World Population Prospects 2022”; United Nations, “World Population Prospects”; Zijdeman et al., “Life Expectancy at birth 2”; James C. Riley, “Estimates of Regional and Global Life Expectancy, 1800-2001” [original data]. 
